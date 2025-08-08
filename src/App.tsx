@@ -100,8 +100,13 @@ export const App: React.FC = () => {
 
   function changeTodo(todoId: number, title: string, completed: boolean) {
     return patchTodos({ id: todoId, title, completed, userId: 3177 })
-      .then(() => getTodos())
-      .then(setTodos)
+      .then(() => {
+        setTodos(prevTodos =>
+          prevTodos.map(todo =>
+            todo.id === todoId ? { ...todo, title, completed } : todo,
+          ),
+        );
+      })
       .catch(() => {
         setError('Unable to update a todo');
         throw new Error('Cant change todos');
@@ -115,14 +120,20 @@ export const App: React.FC = () => {
       completed: !isAllCompleted,
     }));
 
-    setTodos(updatedTodos);
+    setTodos(updatedTodos); // оновлення стану одразу
 
-    Promise.all(updatedTodos.map(todo => patchTodos(todo)))
-      .then(() => getTodos())
-      .then(setTodos)
-      .catch(() => {
-        throw new Error('Cant change all todos');
-      });
+    Promise.all(
+      updatedTodos.map(todo =>
+        patchTodos({
+          id: todo.id,
+          title: todo.title,
+          completed: todo.completed,
+          userId: todo.userId,
+        }),
+      ),
+    ).catch(() => {
+      setError('Unable to update todos');
+    });
   }
 
   function filter(type: Filter) {
